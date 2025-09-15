@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pedidos — Empório Fernandes</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="icon" type="image/png" href="img/id/favicon-32x32.png">
+</head>
+<body class="bg-white text-gray-800 min-h-screen">
+
+<!-- Topo -->
+<header class="flex justify-between items-center px-6 py-4 border-b" style="border-color: rgb(36,59,151);">
+  <div class="flex items-center space-x-2">
+    <img src="img/id/logo.png" alt="Logo" class="h-10">
+    <h1 class="font-bold text-lg" style="color: rgb(36,59,151);">Empório Fernandes</h1>
+  </div>
+  <a href="admin.html" class="px-4 py-2 rounded-lg font-semibold"
+    style="background: rgb(253,219,87); color: rgb(36,59,151);">
+    Voltar ao Painel
+  </a>
+</header>
+
+<!-- Conteúdo -->
+<main class="p-6 max-w-5xl mx-auto">
+  <h2 class="text-2xl font-bold mb-4" style="color: rgb(36,59,151);">Pedidos Recebidos</h2>
+  <div id="lista-pedidos" class="space-y-4"></div>
+</main>
+
+<script>
+let pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
+
+// Renderizar pedidos
+function renderPedidos(){
+  const lista = document.getElementById("lista-pedidos");
+  lista.innerHTML = "";
+  
+  if(pedidos.length === 0){
+    lista.innerHTML = "<p class='text-gray-500'>Nenhum pedido recebido ainda.</p>";
+    return;
+  }
+
+  pedidos.forEach((pedido,i)=>{
+    const card = document.createElement("div");
+    card.className = "border rounded-lg shadow p-4 bg-white";
+
+    let itensHTML = pedido.itens.map(p=>`
+      <div class="flex items-center space-x-3 mb-2">
+        <img src="${p.img}" class="w-12 h-12 object-cover rounded border" />
+        <div>
+          <p class="font-semibold">${p.nome}</p>
+          <p class="text-sm">Qtd: ${p.qtd} — R$ ${(p.preco * p.qtd).toFixed(2)}</p>
+        </div>
+      </div>
+    `).join("");
+
+    card.innerHTML = `
+      <h3 class="font-bold mb-2" style="color: rgb(36,59,151);">Pedido #${i+1}</h3>
+      <div class="mb-3">
+        ${itensHTML}
+      </div>
+      <p class="text-sm mb-1"><strong>Total:</strong> R$ ${pedido.total.toFixed(2)}</p>
+      <p class="text-sm mb-1"><strong>Pagamento:</strong> ${pedido.pagamento}</p>
+      <p class="text-sm mb-3"><strong>Status:</strong> 
+        <span class="px-2 py-1 rounded text-white ${pedido.status==='Confirmado'?'bg-green-600':'bg-yellow-500'}">
+          ${pedido.status}
+        </span>
+      </p>
+      <div class="flex space-x-2">
+        <button onclick="confirmar(${i})" class="px-3 py-1 bg-green-600 text-white rounded">Confirmar</button>
+        <button onclick="remover(${i})" class="px-3 py-1 bg-red-600 text-white rounded">Excluir</button>
+      </div>
+    `;
+    lista.appendChild(card);
+  });
+}
+
+function confirmar(index){
+  pedidos[index].status = "Confirmado";
+  localStorage.setItem("pedidos", JSON.stringify(pedidos));
+  renderPedidos();
+}
+
+function remover(index){
+  pedidos.splice(index,1);
+  localStorage.setItem("pedidos", JSON.stringify(pedidos));
+  renderPedidos();
+}
+
+renderPedidos();
+</script>
+</body>
+</html>

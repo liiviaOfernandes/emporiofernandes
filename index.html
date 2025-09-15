@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Empório Fernandes</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="icon" type="image/png" href="img/id/favicon-32x32.png">
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col">
+
+<!-- Topo -->
+<header class="flex items-center justify-between px-6 py-4 bg-white shadow">
+  <div class="flex items-center space-x-2">
+    <img src="img/id/logo.png" alt="Logo" class="h-10">
+    <h1 class="font-bold text-lg" style="color: rgb(36,59,151);">Empório Fernandes</h1>
+  </div>
+</header>
+
+<!-- Produtos -->
+<main class="flex-1 p-6 max-w-6xl mx-auto">
+  <h2 class="text-2xl font-bold mb-4" style="color: rgb(36,59,151);">Cardápio</h2>
+  <div id="lista-produtos" class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"></div>
+</main>
+
+<!-- Barra do Carrinho -->
+<footer id="barra-carrinho" class="fixed bottom-0 left-0 right-0 bg-white shadow p-4 flex justify-between items-center hidden">
+  <span id="resumo-carrinho" class="font-semibold"></span>
+  <button onclick="abrirCarrinho()" class="px-4 py-2 rounded-lg font-semibold"
+    style="background: rgb(253,219,87); color: rgb(36,59,151);">
+    Ver Carrinho
+  </button>
+</footer>
+
+<!-- Popup Carrinho -->
+<div id="popup-carrinho" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+  <div class="bg-white p-6 rounded-xl w-full max-w-lg shadow-lg max-h-[90vh] overflow-y-auto">
+    <h3 class="text-xl font-semibold mb-4" style="color: rgb(36,59,151);">Seu Carrinho</h3>
+    <div id="itens-carrinho" class="space-y-3 mb-4"></div>
+    <p class="font-bold mb-2">Total: R$ <span id="total-carrinho">0.00</span></p>
+
+    <!-- Forma de pagamento -->
+    <div class="mb-4">
+      <label class="font-semibold block mb-2">Forma de pagamento:</label>
+      <select id="pagamento" class="w-full px-3 py-2 border rounded">
+        <option value="Pix">Pix</option>
+        <option value="Cartão">Cartão</option>
+      </select>
+    </div>
+
+    <div class="flex justify-end space-x-3">
+      <button onclick="fecharCarrinho()" class="px-4 py-2 rounded border">Cancelar</button>
+      <button onclick="finalizarPedido()" class="px-4 py-2 rounded font-semibold"
+        style="background: rgb(253,219,87); color: rgb(36,59,151);">
+        Confirmar Pedido
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+let produtos = JSON.parse(localStorage.getItem("produtos")) || [];
+let carrinho = [];
+
+// Renderizar produtos
+function renderProdutos(){
+  const lista = document.getElementById("lista-produtos");
+  lista.innerHTML = "";
+  produtos.forEach((p,i)=>{
+    if(p.estoque){
+      const card = document.createElement("div");
+      card.className="border rounded-lg shadow p-3 flex flex-col items-center text-center bg-white";
+      card.innerHTML=`
+        <img src="${p.img}" class="w-32 h-32 object-cover rounded mb-2 border" />
+        <h3 class="font-semibold">${p.nome}</h3>
+        <p class="text-sm mb-2">R$ ${p.preco.toFixed(2)}</p>
+        <button onclick="adicionarCarrinho(${i})" class="px-3 py-1 rounded font-semibold"
+          style="background: rgb(253,219,87); color: rgb(36,59,151);">
+          Adicionar
+        </button>
+      `;
+      lista.appendChild(card);
+    }
+  });
+}
+
+// Adicionar ao carrinho
+function adicionarCarrinho(index){
+  let produto = produtos[index];
+  let item = carrinho.find(p=>p.id===produto.id);
+  if(item){
+    item.qtd++;
+  } else {
+    carrinho.push({...produto,qtd:1});
+  }
+  atualizarCarrinho();
+}
+
+// Atualizar barra do carrinho
+function atualizarCarrinho(){
+  const barra = document.getElementById("barra-carrinho");
+  const resumo = document.getElementById("resumo-carrinho");
+  let totalItens = carrinho.reduce((acc,p)=>acc+p.qtd,0);
+  let totalPreco = carrinho.reduce((acc,p)=>acc+p.preco*p.qtd,0);
+
+  if(carrinho.length>0){
+    barra.classList.remove("hidden");
+    resumo.textContent = `${totalItens} itens • R$ ${totalPreco.toFixed(2)}`;
+  } else {
+    barra.classList.add("hidden");
+  }
+}
+
+// Abrir carrinho
+function abrirCarrinho(){
+  document.getElementById("popup-carrinho").classList.remove("hidden");
+  const itensDiv = document.getElementById("itens-carrinho");
+  itensDiv.innerHTML="";
+  let total=0;
+  carrinho.forEach((p,i)=>{
+    total += p.preco*p.qtd;
+    itensDiv.innerHTML += `
+      <div class="flex items-center space-x-3 border-b pb-2">
+        <img src="${p.img}" class="w-12 h-12 object-cover rounded border"/>
+        <div class="flex-1">
+          <p class="font-semibold">${p.nome}</p>
+          <p class="text-sm">Qtd: ${p.qtd} — R$ ${(p.preco*p.qtd).toFixed(2)}</p>
+        </div>
+        <button onclick="removerCarrinho(${i})" class="text-red-500">x</button>
+      </div>
+    `;
+  });
+  document.getElementById("total-carrinho").textContent = total.toFixed(2);
+}
+
+// Fechar carrinho
+function fecharCarrinho(){
+  document.getElementById("popup-carrinho").classList.add("hidden");
+}
+
+// Remover item do carrinho
+function removerCarrinho(index){
+  carrinho.splice(index,1);
+  atualizarCarrinho();
+  abrirCarrinho();
+}
+
+// Finalizar pedido
+function finalizarPedido(){
+  if(carrinho.length===0) return;
+  let total = carrinho.reduce((acc,p)=>acc+p.preco*p.qtd,0);
+  let pagamento = document.getElementById("pagamento").value;
+  let pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
+  
+  pedidos.push({
+    itens: carrinho,
+    total,
+    pagamento,
+    status:"Pendente",
+    data:new Date().toLocaleString()
+  });
+
+  localStorage.setItem("pedidos",JSON.stringify(pedidos));
+  carrinho=[];
+  atualizarCarrinho();
+  fecharCarrinho();
+  alert("Pedido realizado com sucesso!");
+}
+
+renderProdutos();
+</script>
+</body>
+</html>
